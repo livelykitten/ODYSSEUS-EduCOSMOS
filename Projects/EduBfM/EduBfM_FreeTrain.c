@@ -59,6 +59,7 @@
 
 #include "EduBfM_common.h"
 #include "EduBfM_Internal.h"
+#include <stdio.h>
 
 
 
@@ -91,7 +92,18 @@ Four EduBfM_FreeTrain(
     /*@ check if the parameter is valid. */
     if (IS_BAD_BUFFERTYPE(type)) ERR(eBADBUFFERTYPE_BFM);	
 
+    index = edubfm_LookUp(trainId, type);
+    if (index == NOTFOUND_IN_HTABLE)
+    	ERR(eNOTFOUND_BFM);
 
+    if (BI_FIXED(type, index) == 0) {
+    	printf("Warning: Fixed counter is less than 0!!!\n");
+    	printf("trainId = {%d,  %d}\n",
+    		BI_KEY(type, index).volNo, BI_KEY(type, index).pageNo);
+    	fflush(stdout);
+    }
+    else
+    	BI_FIXED(type, index)--;
     
     return( eNOERROR );
     

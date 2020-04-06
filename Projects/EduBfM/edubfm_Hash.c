@@ -116,7 +116,15 @@ Four edubfm_Insert(
     if( (index < 0) || (index > BI_NBUFS(type)) )
         ERR( eBADBUFINDEX_BFM );
 
-   
+    hashValue = BFM_HASH(key, type);
+
+    if (BI_HASHTABLEENTRY(type, hashValue) == NIL) {
+        BI_HASHTABLEENTRY(type, hashValue) = index;
+        return eNOERROR;
+    }
+    
+    BI_NEXTHASHENTRY(type, index) = BI_HASHTABLEENTRY(type, hashValue);
+    BI_HASHTABLEENTRY(type, hashValue) = index;
 
     return( eNOERROR );
 
@@ -152,7 +160,23 @@ Four edubfm_Delete(
 
     CHECKKEY(key);    /*@ check validity of key */
 
+    hashValue = BFM_HASH(key, type);
 
+    for (i = BI_HASHTABLEENTRY(type, hashValue), prev = NIL;
+        i != NIL;
+        i = BI_NEXTHASHENTRY(type, i), prev = i)
+    {
+        if (BI_KEY(type, i).pageNo == key->pageNo &&
+            BI_KEY(type, i).volNo == key->volNo)
+        {
+            if (prev == NIL) {
+                BI_HASHTABLEENTRY(type, i) = NIL;
+                return eNOERROR;
+            }
+            BI_NEXTHASHENTRY(type, prev) = BI_NEXTHASHENTRY(type, i);
+            return eNOERROR;
+        }
+    }
 
     ERR( eNOTFOUND_BFM );
 
@@ -181,14 +205,24 @@ Four edubfm_LookUp(
     BfMHashKey          *key,                   /* IN a hash key in Buffer Manager */
     Four                type)                   /* IN buffer type */
 {
-	/* These local variables are used in the solution code. However, you don¡¯t have to use all these variables in your code, and you may also declare and use additional local variables if needed. */
-    Two                 i, j;                   /* indices */
+
+    Two i;
+    Two entry;
     Two                 hashValue;
 
 
     CHECKKEY(key);    /*@ check validity of key */
 
+    hashValue = BFM_HASH(key, type);
 
+    for (i = BI_HASHTABLEENTRY(type, hashValue);
+        i != NIL;
+        i = BI_NEXTHASHENTRY(type, i))
+    {
+        if (BI_KEY(type, i).pageNo == key->pageNo &&
+            BI_KEY(type, i).volNo == key->volNo)
+            return i;
+    }
 
     return(NOTFOUND_IN_HTABLE);
     
@@ -213,11 +247,11 @@ Four edubfm_LookUp(
  */
 Four edubfm_DeleteAll(void)
 {
-	/* These local variables are used in the solution code. However, you don¡¯t have to use all these variables in your code, and you may also declare and use additional local variables if needed. */
-    Two 	i;
-    Four        tableSize;
-    
+    Four type;
 
+    for (type = 0; type < NUM_BUF_TYPES; type++) {
+        memset(BI_HASHTABLE(type), -1, HASHTABLESIZE(type) * sizeof(Two));
+    }
 
     return(eNOERROR);
 

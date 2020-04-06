@@ -98,14 +98,49 @@ Four edubfm_AllocTrain(
 	/* These local variables are used in the solution code. However, you don¡¯t have to use all these variables in your code, and you may also declare and use additional local variables if needed. */
     Four 	e;			/* for error */
     Four 	victim;			/* return value */
-    Four 	i;
+    Four 	i, idx;
+    TrainID trainId;
+    Four nFixed;
     
 
 	/* Error check whether using not supported functionality by EduBfM */
 	if(sm_cfgParams.useBulkFlush) ERR(eNOTSUPPORTED_EDUBFM);
 
+	nFixed = 0;
+	i = 0;
+	while(1) {
+		idx = (BI_NEXTVICTIM(type) + i) % BI_NBUFS(type);
+		if (BI_FIXED(type, idx) == 0) {
+			nFixed++;
+			if ((BI_BITS(type, idx) & REFER) == 0) {
+				victim = idx;
+				break;
+			}
+			BI_BITS(type, idx) &= ~REFER;
+		}
 
-    
+		if (i >= BI_NBUFS(type) && nFixed == 0)
+			ERR(eNOUNFIXEDBUF_BFM);
+		i++;
+	}
+		
+
+	BI_BITS(type, victim) = 0;
+	BI_NEXTVICTIM(type) = (victim + 1) % BI_NBUFS(type);
+
+	trainId.pageNo = BI_KEY(type, victim).pageNo;
+	trainId.volNo = BI_KEY(type, victim).volNo;
+
+	if (BI_BITS(type, victim) & DIRTY) {
+		e = edubfm_FlushTrain(&trainId, type);
+		if (e < 0)
+			ERR(e);
+	}
+
+	e = edubfm_Delete(&trainId, type);
+	if (e != eNOERROR)
+		ERR(e);
+
     return( victim );
     
 }  /* edubfm_AllocTrain */

@@ -82,10 +82,24 @@ Four EduBfM_FlushAll(void)
 {
 	/* These local variables are used in the solution code. However, you don¡¯t have to use all these variables in your code, and you may also declare and use additional local variables if needed. */
     Four        e;                      /* error */
-    Two         i;                      /* index */
+    Two         i, j;                      /* index */
     Four        type;                   /* buffer type */
+    TrainID		trainId;
 
-    
+    for (type = 0; type < NUM_BUF_TYPES; type++) {
+        for (i = 0; i < HASHTABLESIZE(type); i++) {
+	    	for (j = BI_HASHTABLEENTRY(type, i); j != NIL; j = BI_NEXTHASHENTRY(type, j)) {
+	    		if ((BI_BITS(type, j) & DIRTY) != 0) {
+	    			trainId.pageNo = BI_KEY(type, j).pageNo;
+	    			trainId.volNo = BI_KEY(type, j).volNo;
+	    			e = edubfm_FlushTrain(&trainId, type);
+	    			if (e != eNOERROR)
+	    				ERR(e);
+	    		}
+	    	}
+
+	    }
+	}
 
     return( eNOERROR );
     

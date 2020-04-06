@@ -99,6 +99,7 @@ Four EduBfM_GetTrain(
 	/* These local variables are used in the solution code. However, you don¡¯t have to use all these variables in your code, and you may also declare and use additional local variables if needed. */
     Four                e;                      /* for error */
     Four                index;                  /* index of the buffer pool */
+    Four                pageIdx;
 
 
     /*@ Check the validity of given parameters */
@@ -108,8 +109,33 @@ Four EduBfM_GetTrain(
     /* Is the buffer type valid? */
     if(IS_BAD_BUFFERTYPE(type)) ERR(eBADBUFFERTYPE_BFM);	
 
+    index = edubfm_LookUp(trainId, type);
 
+    if (index != NOTFOUND_IN_HTABLE)
+    {
+        BI_FIXED(type, index)++;
+        BI_BITS(type, index) |= REFER;
+        *retBuf = BI_BUFFER(type, BI_KEY(type, index).pageNo);
+        return eNOERROR;
+    }
 
-    return(eNOERROR);   /* No error */
+    index = edubfm_AllocTrain(type);
+    if (index < 0)
+        ERR(index);
+
+    e = edubfm_ReadTrain(trainId, BI_BUFFER(type, index), type);
+    if (e < 0)
+        ERR(e);
+
+    BI_KEY(type, index).pageNo = trainId->pageNo;
+    BI_KEY(type, index).volNo = trainId->volNo;
+    BI_FIXED(type, index) = 1;
+    BI_BITS(type, index) |= REFER;
+
+    e = edubfm_Insert(&BI_KEY(type, index), index, type);
+    if (e < 0)
+        ERR(e);
+
+    return BI_BUFFER(type, index); /* No error */
 
 }  /* EduBfM_GetTrain() */

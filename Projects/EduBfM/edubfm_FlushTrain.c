@@ -62,6 +62,8 @@
 #include "RM.h"
 #include "EduBfM_Internal.h"
 
+#include <assert.h>
+
 
 
 /*@================================
@@ -96,7 +98,21 @@ Four edubfm_FlushTrain(
 	/* Error check whether using not supported functionality by EduBfM */
 	if (RM_IS_ROLLBACK_REQUIRED()) ERR(eNOTSUPPORTED_EDUBFM);
 
+	index = edubfm_LookUp(trainId, type);
+    if (index == NOTFOUND_IN_HTABLE)
+    	ERR(eNOTFOUND_BFM);
 
+    if ((BI_BITS(type, index) & DIRTY) != 0) {
+    	BI_BITS(type, index) &= ~DIRTY;
+
+    	assert(BI_KEY(type, index).pageNo == trainId->pageNo);
+    	assert(BI_KEY(type, index).volNo == trainId->volNo);
+
+    	e = RDsM_WriteTrain(
+    		BI_BUFFER(type, trainId->pageNo),trainId, BI_BUFSIZE(type));
+    	if (e != eNOERROR)
+    		ERR(e);
+    }
 	
     return( eNOERROR );
 
