@@ -103,7 +103,7 @@ Four EduBfM_FreeTrain(
     	fflush(stdout);
     }
     else
-    	BI_FIXED(type, index)--;
+    	BI_FIXED(type, index) -= 1;
     
     return( eNOERROR );
     

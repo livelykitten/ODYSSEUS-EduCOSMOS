@@ -102,14 +102,25 @@ Four edubfm_AllocTrain(
     TrainID trainId;
     Four nFixed;
     
+    //printf("alloc called\n");fflush(stdout);
 
 	/* Error check whether using not supported functionality by EduBfM */
 	if(sm_cfgParams.useBulkFlush) ERR(eNOTSUPPORTED_EDUBFM);
+
+	//printf("alloc 1\n");fflush(stdout);
 
 	nFixed = 0;
 	i = 0;
 	while(1) {
 		idx = (BI_NEXTVICTIM(type) + i) % BI_NBUFS(type);
+		if (BI_KEY(type, idx).pageNo == NIL){
+			victim = idx;
+			BI_BITS(type, victim) = 0;
+			BI_NEXTVICTIM(type) = (victim + 1) % BI_NBUFS(type);
+			BI_NEXTHASHENTRY(type, victim) = NIL;
+			return victim;
+		}
+		//printf("%d ", i);fflush(stdout);
 		if (BI_FIXED(type, idx) == 0) {
 			nFixed++;
 			if ((BI_BITS(type, idx) & REFER) == 0) {
@@ -117,12 +128,19 @@ Four edubfm_AllocTrain(
 				break;
 			}
 			BI_BITS(type, idx) &= ~REFER;
+			//printf("is fixed buf had REFER of 1\n", i);fflush(stdout);
 		}
+		//else
+		//	printf("is not fixed\n", i);fflush(stdout);
+		//printf("nFixed = %d\n", nFixed);
 
 		if (i >= BI_NBUFS(type) && nFixed == 0)
 			ERR(eNOUNFIXEDBUF_BFM);
 		i++;
 	}
+
+	//printf("alloc 2\n");fflush(stdout);
+
 		
 
 	BI_BITS(type, victim) = 0;

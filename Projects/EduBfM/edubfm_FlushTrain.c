@@ -108,8 +108,7 @@ Four edubfm_FlushTrain(
     	assert(BI_KEY(type, index).pageNo == trainId->pageNo);
     	assert(BI_KEY(type, index).volNo == trainId->volNo);
 
-    	e = RDsM_WriteTrain(
-    		BI_BUFFER(type, trainId->pageNo),trainId, BI_BUFSIZE(type));
+    	e = RDsM_WriteTrain(BI_BUFFER(type, index),trainId, BI_BUFSIZE(type));
     	if (e != eNOERROR)
     		ERR(e);
     }

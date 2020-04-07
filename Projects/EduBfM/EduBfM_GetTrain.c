@@ -59,6 +59,7 @@
 
 #include "EduBfM_common.h"
 #include "EduBfM_Internal.h"
+#include <stdio.h>
 
 
 
@@ -100,7 +101,7 @@ Four EduBfM_GetTrain(
     Four                e;                      /* for error */
     Four                index;                  /* index of the buffer pool */
     Four                pageIdx;
-
+    BfMHashKey          hashkey;
 
     /*@ Check the validity of given parameters */
     /* Some restrictions may be added         */
@@ -109,13 +110,17 @@ Four EduBfM_GetTrain(
     /* Is the buffer type valid? */
     if(IS_BAD_BUFFERTYPE(type)) ERR(eBADBUFFERTYPE_BFM);	
 
-    index = edubfm_LookUp(trainId, type);
+    hashkey.pageNo = trainId->pageNo;
+    hashkey.volNo = trainId->volNo;
+
+    index = edubfm_LookUp(&hashkey, type);
 
     if (index != NOTFOUND_IN_HTABLE)
     {
         BI_FIXED(type, index)++;
         BI_BITS(type, index) |= REFER;
-        *retBuf = BI_BUFFER(type, BI_KEY(type, index).pageNo);
+        //*retBuf = BI_BUFFER(type, BI_KEY(type, index).pageNo);
+        *retBuf = BI_BUFFER(type, index);
         return eNOERROR;
     }
 
@@ -136,6 +141,7 @@ Four EduBfM_GetTrain(
     if (e < 0)
         ERR(e);
 
-    return BI_BUFFER(type, index); /* No error */
+    *retBuf = BI_BUFFER(type, index);
+    return eNOERROR; /* No error */
 
 }  /* EduBfM_GetTrain() */
